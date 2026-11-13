@@ -1,0 +1,9 @@
+- name: Ejecutar agente de IA
+            env:
+              GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+              EMAIL_ORIGEN: ${{ secrets.EMAIL_ORIGEN }}
+              EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+              EMAIL_DESTINO: ${{ secrets.EMAIL_DESTINO }}
+              WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
+              WHATSAPP_APIKEY: ${{ secrets.WHATSAPP_APIKEY }}
+            run: python agente_oposiciones.py
