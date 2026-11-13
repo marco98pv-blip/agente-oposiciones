@@ -1,4 +1,5 @@
 import os
+import time
 import smtplib
 import urllib.parse
 from email.mime.text import MIMEText
@@ -21,7 +22,7 @@ for url in FEEDS:
 
 texto_recopilado = "\n".join(entradas)
 
-# 2. Filtrado con Gemini
+# 2. Preparar instrucciones y conectar con Gemini
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 prompt = f"""
@@ -40,14 +41,21 @@ Publicaciones a analizar:
 {texto_recopilado}
 """
 
-response = client.models.generate_content(
-    model="gemini-3.8-flash",
-    contents=prompt,
-)
+# 3. Llamada a Gemini con 3 reintentos automáticos si hay saturación (error 503)
+resultado = ""
+for intento in range(3):
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.8-flash",
+            contents=prompt,
+        )
+        resultado = response.text.strip()
+        break
+    except Exception as e:
+        print(f"Intento {intento + 1} fallido por saturación: {e}")
+        time.sleep(20)
 
-resultado = response.text.strip()
-
-# 3. Funciones de envío
+# 4. Funciones de envío
 def enviar_email(contenido):
     remitente = os.environ["EMAIL_ORIGEN"]
     password = os.environ["EMAIL_PASSWORD"]
@@ -69,14 +77,13 @@ def enviar_whatsapp(contenido):
     telefono = os.environ["WHATSAPP_PHONE"]
     apikey = os.environ["WHATSAPP_APIKEY"]
     
-    # Recortamos si es muy largo para evitar errores de URL en CallMeBot
     texto_wa = f"🚨 *Novedades Oposiciones*\n\n{contenido[:1500]}"
     texto_codificado = urllib.parse.quote(texto_wa)
     
     url = f"https://api.callmebot.com/whatsapp.php?phone={telefono}&text={texto_codificado}&apikey={apikey}"
     requests.get(url, timeout=15)
 
-# 4. Ejecutar envíos solo si hay novedades
+# 5. Ejecutar envíos solo si hay novedades
 if resultado and "SIN_NOVEDADES" not in resultado:
     enviar_email(resultado)
     enviar_whatsapp(resultado)
