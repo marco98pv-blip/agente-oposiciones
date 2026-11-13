@@ -2,9 +2,12 @@ name: Agente de Oposiciones
 
 on:
   schedule:
-    # 08:00 UTC = 09:00 Madrid | 13:00 UTC = 14:00 Madrid (Lunes=1, Viernes=5)
+    # 08:00 UTC = 09:00 Madrid (08:00 Canarias) | 13:00 UTC = 14:00 Madrid (13:00 Canarias)
     - cron: '0 8,13 * * 1,5'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   buscar-oposiciones:
@@ -30,3 +33,11 @@ jobs:
           WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
           WHATSAPP_APIKEY: ${{ secrets.WHATSAPP_APIKEY }}
         run: python agente_oposiciones.py
+
+      - name: Guardar historial de enlaces revisados
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add historial.txt
+          git diff --quiet && git diff --staged --quiet || git commit -m "Actualizar historial de oposiciones"
+          git push
